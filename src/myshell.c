@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/wait.h> 
 
 
 #include "ls_command.h"
@@ -47,12 +48,32 @@ int main(){
         } else if(strcmp(argv[0], "ls")==0){
             my_ls();
         } else if(strcmp(argv[0], "cat")==0){
-            //코드 구현 숙제
-        } else {
-            if (access(argv[0], X_OK)==0){
-                printf("execute %s\n", argv[0]);
+            if (argv[1] == NULL) {
+                printf("Usage: cat <filename>\n");
             } else {
-                printf("command not found: %s\n", argv[0]);
+                FILE *file = fopen(argv[1], "r");
+                if (file == NULL) {
+                    perror("cat");
+                } else {
+                    char line[MAX_LINE];
+                    while (fgets(line, sizeof(line), file)) {
+                        printf("%s", line);
+                    }
+                    fclose(file);
+                }
+            }
+        } else {
+            pid_t pid = fork();
+            if (pid == 0) {
+                // Child process
+                execvp(argv[0], argv);
+                perror("execvp");
+                exit(1);
+            } else if (pid > 0) {
+                // Parent process
+                wait(NULL);
+            } else {
+                perror("fork");
             }
         }
     
